@@ -6,60 +6,125 @@
 #include<arpa/inet.h>         // inet_addr() 函数 库
 #include<cstring>
 
-#pragma comment(lib, "Ws2_32.lib")
+void abandonRootTemporary(uid_t uid_tran);
+void abandonRootPermanent(uid_t uid_tran);
 
 int main(int argc, char *argv[])
 {
     // 三个 id 分别对应了实际用户ID，有效用户ID，保存的用户ID
     uid_t ruid, euid,suid;
     getresuid(&ruid, &euid, &suid);
-    printf("------beginning uid :------ \n ruid = %d, euid = %d, suid = %d\n",
+    printf("------开始的 uid :------ \n ruid = %d, euid = %d, suid = %d\n",
 		    ruid, euid, suid);
+    // 1. 提供 http 网络服务，需要设置 setuid 位, 否则会失败
+    printf("------1.提供 http 网络服务------\n");
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if(server_socket < 0) 
     {
         printf("erro \n");
     }
-    getresuid(&ruid, &euid, &suid);
-    printf("------after socket uid :------ \n ruid = %d, euid = %d, suid = %d\n",
-		    ruid, euid, suid);
+    // bind 绑定
     struct sockaddr_in server_sockaddr;
     memset(&server_sockaddr, 0, sizeof(server_sockaddr));
     server_sockaddr.sin_family = AF_INET;
     server_sockaddr.sin_port = htons(80);
     server_sockaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    //非 root 用户进行连接
     int is_bind = bind(server_socket, (struct sockaddr *)&server_sockaddr,
 		    sizeof(server_sockaddr));
     if (is_bind < 0)
     {
-        printf("bind erro \n");
+        printf("bind error \n");
     }
     getresuid(&ruid, &euid, &suid);
-    printf("------after rocketeerli connect uid :------ \n ruid = %d, euid = %d, suid = %d\n",
+    printf("------bind 后的 uid :------ \n ruid = %d, euid = %d, suid = %d\n",
                     ruid, euid, suid);
-    int is_lgj = setuid(1001);
-    if(is_lgj == -1) 
-    {
-        printf("change lgj erro\n");
+    
+    // 2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别
+    if(fork() == 0)  
+    {  
+        getresuid(&ruid, &euid, &suid);
+        printf("------子进程 uid:------\n ruid = %d, euid = %d, suid = %d\n",
+                ruid, euid, suid);
     }
+    else  
+    {   
+        getresuid(&ruid, &euid, &suid);
+        printf("------父进程 uid:------\n ruid = %d, euid = %d, suid = %d\n",
+                ruid, euid, suid);
+        
+        // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
+        execl("/usr/bin/passwd", NULL);
+        getresuid(&ruid, &euid, &suid);
+        printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                    ruid, euid, suid);
 
-    //设置成root 再连接
-    //int is_root = seteuid(0);
-    //if(is_root == -1) 
-    //{
-     //   printf("root erro\n");
-    //}
-    printf("------after set root uid :------ \n ruid = %d, euid = %d, suid = %d\n",
+        // 4.两种放弃 root 权限的方式
+        abandonRootTemporary(1001);  // 临时性放弃root权限
+        abandonRootPermanent(1001);  // 永久性放弃root权限
+
+        // 5. 比较有环境变量和无环境变量的函数使用的差异。
+        // 5.1 有环境变量的函数使用
+        execlp("passwd", NULL);
+        printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
                     ruid, euid, suid);
-    int is_connect = connect(server_socket, (struct sockaddr *)&server_sockaddr,
-                    sizeof(server_sockaddr));
-    if (is_connect == -1)
-    {
-        printf("connect erro \n");
+        // 5.2 无环境变量的函数使用
+        execl("/usr/bin/passwd", NULL);
+        getresuid(&ruid, &euid, &suid);
+        printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                    ruid, euid, suid);
     }
-    printf("------after connect uid :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
-    printf("socket_id = %d\n", server_socket);
     return 0;
+}
+
+// 4.1 程序临时性放弃root权限
+void abandonRootTemporary(uid_t uid_tran)
+{
+    uid_t ruid, euid,suid;
+    getresuid(&ruid, &euid, &suid);
+    if (euid == 0) 
+    {
+        // 临时性放弃root权限
+        int is_setsuid = setsuid(0);
+        int is_seteuid = seteuid(uid_tran);
+        getresuid(&ruid, &euid, &suid);
+        if(is_seteuid > 0 && is_setsuid > 0)
+        {
+            printf("------ 4.1 临时性放弃root权限成功 ------\n");
+        }
+        else
+        {
+            printf("------ 4.1 临时性放弃root权限失败 ------\n");
+        }
+        printf("ruid = %d, euid = %d, suid = %d\n", ruid, euid, suid);
+    }
+    else
+    {
+        printf("4.1 无 root 权限, 无法放弃root权限\n");
+    }
+}
+
+// 4.2永久性放弃root权限
+void abandonRootPermanent(uid_t uid_tran)
+{
+    uid_t ruid, euid,suid;
+    getresuid(&ruid, &euid, &suid);
+    if (euid == 0) 
+    {
+        // 永久性放弃root权限
+        int is_setuid = setuid(uid_tran);
+        getresuid(&ruid, &euid, &suid);
+        if(is_seteuid > 0 && is_setsuid > 0)
+        {
+            printf("------ 4.2 永久性放弃root权限成功 ------\n");
+        }
+        else
+        {
+            printf("------ 4.2 永久性放弃root权限失败 ------\n");
+        }
+        printf("ruid = %d, euid = %d, suid = %d\n", ruid, euid, suid);
+    }
+    else
+    {
+        printf("4.2 无 root 权限, 无法放弃root权限\n");
+    }
 }
