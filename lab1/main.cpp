@@ -53,25 +53,31 @@ int main(int argc, char *argv[])
                 ruid, euid, suid);
         
         // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
-        execl("/usr/bin/passwd", NULL);
-        getresuid(&ruid, &euid, &suid);
-        printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
+        if(fork() == 0) 
+	{
+	    execl("/bin/ping", "ping", "-c", "3", "178.128.63.64",(char *)0);
+            getresuid(&ruid, &euid, &suid);
+            printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
                     ruid, euid, suid);
+	}
 
         // 4.两种放弃 root 权限的方式
         abandonRootTemporary(1001);  // 临时性放弃root权限
         abandonRootPermanent(1001);  // 永久性放弃root权限
 
         // 5. 比较有环境变量和无环境变量的函数使用的差异。
-        // 5.1 有环境变量的函数使用
-        execlp("passwd", NULL);
-        printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
-        // 5.2 无环境变量的函数使用
-        execl("/usr/bin/passwd", NULL);
-        getresuid(&ruid, &euid, &suid);
-        printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
+	if(fork() == 0) 
+	{
+	    // 5.1 有环境变量的函数使用
+            execlp("ping", "ping", "-c", "3", "178.128.63.64", (char *)0);
+            printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                        ruid, euid, suid);
+            // 5.2 无环境变量的函数使用
+            execl("/bin/ping", "ping", "-c", "3", "178.128.63.64", (char *)0);
+            getresuid(&ruid, &euid, &suid);
+            printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                        ruid, euid, suid);
+	}
     }
     return 0;
 }
@@ -84,10 +90,9 @@ void abandonRootTemporary(uid_t uid_tran)
     if (euid == 0) 
     {
         // 临时性放弃root权限
-        int is_setsuid = setsuid(0);
         int is_seteuid = seteuid(uid_tran);
         getresuid(&ruid, &euid, &suid);
-        if(is_seteuid > 0 && is_setsuid > 0)
+        if(euid > 0)
         {
             printf("------ 4.1 临时性放弃root权限成功 ------\n");
         }
@@ -108,12 +113,17 @@ void abandonRootPermanent(uid_t uid_tran)
 {
     uid_t ruid, euid,suid;
     getresuid(&ruid, &euid, &suid);
+    if (euid != 0 && (ruid == 0 || suid == 0))
+    {
+        setuid(0);
+	getresuid(&ruid, &euid, &suid);
+    }
     if (euid == 0) 
     {
         // 永久性放弃root权限
-        int is_setuid = setuid(uid_tran);
+        setuid(uid_tran);
         getresuid(&ruid, &euid, &suid);
-        if(is_seteuid > 0 && is_setsuid > 0)
+        if(ruid > 0 && euid > 0 && suid > 0)
         {
             printf("------ 4.2 永久性放弃root权限成功 ------\n");
         }
