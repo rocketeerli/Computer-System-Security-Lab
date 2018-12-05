@@ -40,23 +40,25 @@ int main(int argc, char *argv[])
                     ruid, euid, suid);
     
     // 2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别
+    printf("2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别");
     if(fork() == 0)  
     {  
         getresuid(&ruid, &euid, &suid);
         printf("------子进程 uid:------\n ruid = %d, euid = %d, suid = %d\n",
                 ruid, euid, suid);
+        
+        // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
+        printf("3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化");
+	    execl("./a", "./a", (char *)0);
+        // getresuid(&ruid, &euid, &suid);
+        // printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
+        //         ruid, euid, suid);
     }
     else  
     {   
         getresuid(&ruid, &euid, &suid);
         printf("------父进程 uid:------\n ruid = %d, euid = %d, suid = %d\n",
                 ruid, euid, suid);
-        
-        // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
-	    execl("./a", "./a", (char *)0);
-            getresuid(&ruid, &euid, &suid);
-            printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
 
         // 4.两种放弃 root 权限的方式
         abandonRootTemporary(1001);  // 临时性放弃root权限
@@ -64,15 +66,22 @@ int main(int argc, char *argv[])
 
         // 5. 比较有环境变量和无环境变量的函数使用的差异。
 	    // 5.1 有环境变量的函数使用
-        execlp("a", "./a", (char *)0);
-        printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
-        // 5.2 无环境变量的函数使用
-        execl("./a", "./a", (char *)0);
-        getresuid(&ruid, &euid, &suid);
-        printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                    ruid, euid, suid);
+        if (fork() == 0) 
+        {
+            execlp("a", "./a", (char *)0);
+        }
+        // printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+        //             ruid, euid, suid);
+        if (fork() == 0)
+        {
+            // 5.2 无环境变量的函数使用
+            execl("./a", "./a", (char *)0);
+        }
+        // getresuid(&ruid, &euid, &suid);
+        // printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+        //             ruid, euid, suid);
 	}
+    wait(NULL);
     return 0;
 }
 
