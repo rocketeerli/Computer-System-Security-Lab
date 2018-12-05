@@ -5,6 +5,7 @@
 #include<netinet/in.h>        //sockaddr_in 库
 #include<arpa/inet.h>         // inet_addr() 函数 库
 #include<cstring>
+#include<sys/wait.h>
 
 void abandonRootTemporary(uid_t uid_tran);
 void abandonRootPermanent(uid_t uid_tran);
@@ -35,12 +36,16 @@ int main(int argc, char *argv[])
     {
         printf("bind error \n");
     }
+    else
+    {
+        printf("bind success \n");
+    }
     getresuid(&ruid, &euid, &suid);
     printf("------bind 后的 uid :------ \n ruid = %d, euid = %d, suid = %d\n",
                     ruid, euid, suid);
     
     // 2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别
-    printf("2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别");
+    printf("2. 用户fork进程后，父进程和子进程中euid、ruid、suid的差别\n");
     if(fork() == 0)  
     {  
         getresuid(&ruid, &euid, &suid);
@@ -48,8 +53,8 @@ int main(int argc, char *argv[])
                 ruid, euid, suid);
         
         // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
-        printf("3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化");
-	    execl("./a", "./a", (char *)0);
+        printf("3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化\n");
+	execl("./a", "./a", (char *)0);
         // getresuid(&ruid, &euid, &suid);
         // printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
         //         ruid, euid, suid);
@@ -65,18 +70,22 @@ int main(int argc, char *argv[])
         abandonRootPermanent(1001);  // 永久性放弃root权限
 
         // 5. 比较有环境变量和无环境变量的函数使用的差异。
-	    // 5.1 有环境变量的函数使用
+	// 5.1 有环境变量的函数使用
         if (fork() == 0) 
         {
+	    printf("5.1 有环境变量的函数使用\n");
             execlp("a", "./a", (char *)0);
         }
+	wait(NULL);
         // printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
         //             ruid, euid, suid);
         if (fork() == 0)
         {
             // 5.2 无环境变量的函数使用
+	    printf("5.2 无环境变量的函数使用\n");
             execl("./a", "./a", (char *)0);
         }
+	wait(NULL);
         // getresuid(&ruid, &euid, &suid);
         // printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
         //             ruid, euid, suid);
