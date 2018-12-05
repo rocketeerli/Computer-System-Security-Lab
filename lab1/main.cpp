@@ -53,32 +53,26 @@ int main(int argc, char *argv[])
                 ruid, euid, suid);
         
         // 3. 利用 execl 执行 setuid 程序后，euid、ruid、suid是否有变化
-        if(fork() == 0) 
-	{
-	    execl("/bin/ping", "ping", "-c", "3", "178.128.63.64",(char *)0);
+	    execl("./a", "./a", (char *)0);
             getresuid(&ruid, &euid, &suid);
             printf("------ 3.利用 execl 执行 setuid 程序后 :------ \n ruid = %d, euid = %d, suid = %d\n",
                     ruid, euid, suid);
-	}
 
         // 4.两种放弃 root 权限的方式
         abandonRootTemporary(1001);  // 临时性放弃root权限
         abandonRootPermanent(1001);  // 永久性放弃root权限
 
         // 5. 比较有环境变量和无环境变量的函数使用的差异。
-	if(fork() == 0) 
-	{
 	    // 5.1 有环境变量的函数使用
-            execlp("ping", "ping", "-c", "3", "178.128.63.64", (char *)0);
-            printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                        ruid, euid, suid);
-            // 5.2 无环境变量的函数使用
-            execl("/bin/ping", "ping", "-c", "3", "178.128.63.64", (char *)0);
-            getresuid(&ruid, &euid, &suid);
-            printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
-                        ruid, euid, suid);
+        execlp("a", "./a", (char *)0);
+        printf("------ 5.1 有环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                    ruid, euid, suid);
+        // 5.2 无环境变量的函数使用
+        execl("./a", "./a", (char *)0);
+        getresuid(&ruid, &euid, &suid);
+        printf("------ 5.2 无环境变量的函数使用 :------ \n ruid = %d, euid = %d, suid = %d\n",
+                    ruid, euid, suid);
 	}
-    }
     return 0;
 }
 
