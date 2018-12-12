@@ -22,7 +22,7 @@ int main(int argc, char **argv)
 	        break;
 	    case 3 :
 	        if(strcmp(user->pw_name, "root") == 0)
-                changeFileContext(user->pw_name, argv[2]);
+                changeFileContext(argv[1], argv[2]);
 	            break;
 	        break;
     }
@@ -56,7 +56,6 @@ void changeFileContext(char *user, char *userContext)
         }
         // p-str_line 指定比较字符的个数
         is_same_str = strncmp(user, str_line, p-str_line);
-        printf("%s %d\n", str_line, is_same_str);
         // 匹配成功，找到该用户的内容
         if(!is_same_str)
         {
@@ -81,8 +80,9 @@ void changeFileContext(char *user, char *userContext)
             {
                 fprintf(fp, "%s", buf);
             }
+	    printf("已经将用户 %s 的内容更改为 %s \n", user, userContext);
             fclose(fp);
-            return 0;
+	    return;
         }
         offset = ftell(fp);
     }
