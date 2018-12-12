@@ -40,14 +40,18 @@ void changeFileContext(char *user, char *userContext)
     long offset;
     char *p = NULL;
     int is_same_str;
-    char buf[1000] = {0};
+    char buf_after[1000] = {0};
+    char buf_before[100][100];
 
     // 打开可读写的文件，该文件必须存在。
     fp = fopen("aaa", "r+");
     // 得到文件位置指针当前位置相对于文件首的偏移字节数
     offset = ftell(fp);
+    int i = 0;
     while((read_line = getline(&str_line, &len, fp)) != -1) 
     {
+        // 存储文件内容
+        strcpy(buf_before[i], str_line);
         // 判断字符串str2是否是str1的子串。如果是，则返回str2在str1中首次出现的地址；否则，返回NULL。
         p = strstr(str_line, ":");
         if(p == NULL)
@@ -64,27 +68,25 @@ void changeFileContext(char *user, char *userContext)
             // 读取当前指针之后的所有文件内容
             while(!feof(fp)) 
             {
-                buf[index++] = fgetc(fp); 
+                buf_after[index++] = fgetc(fp);
             }
             if(index > 0) 
             {
-                buf[index - 1] = '\0';
-            }
-            // stream将指向以fromwhere为基准，偏移offset个字节的位置
-            // 偏移起始位置：文件头0(SEEK_SET)
-            // 将文件指针移到要修改的内容部分
-            fseek(fp, offset, SEEK_SET);
-            // 写入文件，覆盖掉之前的内容
-            fprintf(fp, "%s:%s\n", user, userContext);
-            if(index > 0) 
-            {
-                fprintf(fp, "%s", buf);
-            }
-	    printf("已经将用户 %s 的内容更改为 %s \n", user, userContext);
+                buf_after[index - 1] = '\0';
+            }       
             fclose(fp);
-	    return;
+	        break;
         }
         offset = ftell(fp);
+        i++;
     }
+    // 重新写入文件
+    fp = fopen("aaa", "w+");
+    for (int j = 0; j < i; j++)
+    {
+        fprintf(fp, "%s", buf_before[j]);
+    }
+    fprintf(fp, "%s", buf_after);
+    printf("已经将用户 %s 的内容更改为 %s \n", user, userContext);
 }
 
