@@ -86,6 +86,7 @@ void changeFileContext(char *user, char *userContext)
     {
         fprintf(fp, "%s", buf_before[j]);
     }
+    fprintf(fp, "%s:%s\n", user, userContext);
     fprintf(fp, "%s", buf_after);
     printf("已经将用户 %s 的内容更改为 %s \n", user, userContext);
 }
