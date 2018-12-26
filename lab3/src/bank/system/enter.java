@@ -180,6 +180,7 @@ public class enter {
 		JTextField userPasswordText = new JTextField(20);
 		JTextField identityText = new JTextField(20);
 		JButton registerButton = new JButton("注册");
+		JButton returnButton = new JButton("返回");
 		
 		// 设置标签的大小和位置
 		userLabel.setBounds(10, 20, 80, 25);
@@ -188,7 +189,8 @@ public class enter {
 		userPasswordText.setBounds(100, 50, 165, 25);
 		identityLabel.setBounds(10, 80, 80, 25);
 		identityText.setBounds(100, 80, 165, 25);
-		registerButton.setBounds(10, 140, 80, 25);
+		registerButton.setBounds(10, 110, 80, 25);
+		returnButton.setBounds(10, 140, 80, 25);
 		
 		// 设置面板内容
 		panel.add(userLabel);
@@ -198,6 +200,7 @@ public class enter {
 		panel.add(identityLabel);
 		panel.add(identityText);
 		panel.add(registerButton);
+		panel.add(returnButton);
 		
 		registerButton.addActionListener(new ActionListener() {
 			
@@ -235,6 +238,15 @@ public class enter {
 					}
 				}
 				frame.dispose();
+			}
+		});
+		
+		returnButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.dispose();
+				loginPage();
 			}
 		});
 		
@@ -445,7 +457,7 @@ public class enter {
 		panel.setLayout(null);    // 面板布局
 		
 		// 创建 标签 & 输入框 & 按钮
-		JLabel withdrawRemindLabel = new JLabel("存款金额：");
+		JLabel withdrawRemindLabel = new JLabel("取款金额：");
 		JTextField moneyNumberText = new JTextField(30);
 		JButton ensureButton = new JButton("确定");
 		JButton returnButton = new JButton("返回");
