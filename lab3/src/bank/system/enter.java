@@ -599,20 +599,66 @@ public class enter {
 						deposit = cli.getDeposit();
 					}
 				}
-				// 写日志
-				try {
-					Date now = new Date(); 
-					SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					String current_time = dateFormat.format(now);
-					Log.output.write((current_time + "\t 管理员 " + current_user_name + " 同意了用户 " + 
-									current_user_name + " 的 " + bill.getMoney() +" 元的存款请求\n").getBytes());
-				} catch (IOException e2) {
-					System.out.println("写入日志失败!!!");
+				if (bill.getMoney() < 0) {
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 管理员 " + current_user_name + " 同意了用户 " + 
+										current_user_name + " 的 " + Math.abs(bill.getMoney()) +" 元的取款请求\n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
+				} else {
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 管理员 " + current_user_name + " 同意了用户 " + 
+										current_user_name + " 的 " + bill.getMoney() +" 元的存款请求\n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
 				}
-				// 更新存款
-				MysqlConnect.updateDeposit(bill.getClient_id(), deposit + bill.getMoney());
-				// 更新数据库用户信息
-				MysqlConnect.getClientInformation();
+				if (deposit + bill.getMoney() < 0) {
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 余额不足\t 用户 " + current_user_name + " 取款失败\n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
+				} else {
+					if (bill.getMoney() < 0) {
+						// 写日志
+						try {
+							Date now = new Date(); 
+							SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+							String current_time = dateFormat.format(now);
+							Log.output.write((current_time + "\t 用户 " + current_user_name + " 取款 " + Math.abs(bill.getMoney()) + " 成功\n").getBytes());
+						} catch (IOException e2) {
+							System.out.println("写入日志失败!!!");
+						}
+					} else {
+						// 写日志
+						try {
+							Date now = new Date(); 
+							SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+							String current_time = dateFormat.format(now);
+							Log.output.write((current_time + "\t 用户 " + current_user_name + " 存款 " + bill.getMoney() + " 成功\n").getBytes());
+						} catch (IOException e2) {
+							System.out.println("写入日志失败!!!");
+						}
+					}
+					// 更新存款
+					MysqlConnect.updateDeposit(bill.getClient_id(), deposit + bill.getMoney());
+					// 更新数据库用户信息
+					MysqlConnect.getClientInformation();
+				}
 				for (Client cli : Information.clients) {
 					if (cli.getUserName().equals(enter.current_user_name)) {
 						deposit = cli.getDeposit();
@@ -633,15 +679,28 @@ public class enter {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// 写日志
-				try {
-					Date now = new Date(); 
-					SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-					String current_time = dateFormat.format(now);
-					Log.output.write((current_time + "\t 管理员 " + current_user_name + " 拒绝了用户 " + 
-									current_user_name + " 的 " + bill.getMoney() +" 元的存款请求\n").getBytes());
-				} catch (IOException e2) {
-					System.out.println("写入日志失败!!!");
+				if (bill.getMoney() < 0) {
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 管理员 " + current_user_name + " 拒绝了用户 " + 
+								current_user_name + " 的 " + Math.abs(bill.getMoney()) +" 元的取款请求\n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
+				} else {
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 管理员 " + current_user_name + " 拒绝了用户 " + 
+										current_user_name + " 的 " + bill.getMoney() +" 元的存款请求\n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
 				}
 				// 删除账单
 				MysqlConnect.deleteBill(String.valueOf(bill.getId()));
