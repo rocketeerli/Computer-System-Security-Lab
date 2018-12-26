@@ -27,10 +27,17 @@ public class MysqlConnect {
     	getManagerInformation();
     	System.out.println("账单信息：");
     	getBillInformation();
-//    	System.out.println("删除账单");
-//    	deleteBill("33");
-//    	System.out.println("插入账单信息");
-//    	insertBill(333, "lgj", 800);
+    	System.out.println("插入用户信息");
+    	Client client = new Client();
+    	client.setUserName("lalala");
+    	client.setUserPassword("lalala");
+    	client.setDeposit(0);
+    	insertClient(client);
+    	System.out.println("插入管理员信息");
+    	Administrator administrator = new Administrator();
+    	administrator.setUserName("heihei");
+    	administrator.setUserPassword("heihei");
+    	insertManager(administrator);
     }
     
     // 查询用户名对应的密码
@@ -352,6 +359,114 @@ public class MysqlConnect {
                 se.printStackTrace();
             }
         }
+    }
+    
+    // 增加用户信息
+    public static int insertClient(Client client) {
+        Connection conn = null;
+        Statement stmt = null;
+        try{
+            // 注册 JDBC 驱动
+            Class.forName("com.mysql.jdbc.Driver");
+            
+            // 打开链接
+            System.out.println("连接数据库...");
+            conn = DriverManager.getConnection(DB_URL,USER,PASS);
+        
+            // 执行查询
+            stmt = conn.createStatement();
+            String sql;
+            Random rand = new Random();
+            int id = rand.nextInt(100000)+ 1; 
+            sql = "insert into client_info(id, name, password, money) values(" + 
+            	"'" + id + "', '" + client.getUserName() + "', '" + client.getUserPassword() +"', '" + client.getDeposit() + "')";
+            int rs = stmt.executeUpdate(sql);
+            if (rs > 0) {
+				System.out.println("插入数据成功!!!");
+				stmt.close();
+	            conn.close();
+				return id;
+			} else {
+				System.out.println("插入数据失败!!!");
+			}
+            // 完成后关闭
+            stmt.close();
+            conn.close();
+            return 0;
+        }catch(SQLException se){
+            // 处理 JDBC 错误
+            se.printStackTrace();
+        }catch(Exception e){
+            // 处理 Class.forName 错误
+            e.printStackTrace();
+        }finally{
+            // 关闭资源
+            try{
+                if(stmt!=null) stmt.close();
+            }catch(SQLException se2){
+            }// 什么都不做
+            try{
+                if(conn!=null) 
+                	conn.close();
+            }catch(SQLException se){
+                se.printStackTrace();
+            }
+        }
+        return 0;
+    }
+    
+    // 增加管理员信息
+    public static int insertManager(Administrator administrator) {
+        Connection conn = null;
+        Statement stmt = null;
+        try{
+            // 注册 JDBC 驱动
+            Class.forName("com.mysql.jdbc.Driver");
+            
+            // 打开链接
+            System.out.println("连接数据库...");
+            conn = DriverManager.getConnection(DB_URL,USER,PASS);
+        
+            // 执行查询
+            stmt = conn.createStatement();
+            String sql;
+            Random rand = new Random();
+            int id = rand.nextInt(100000)+ 1; 
+            sql = "insert into manager_info(id, name, password) values(" + 
+            	"'" + id + "', '" + administrator.getUserName() + "', '" + administrator.getUserPassword() + "')";
+            int rs = stmt.executeUpdate(sql);
+            if (rs > 0) {
+				System.out.println("插入数据成功!!!");
+				stmt.close();
+	            conn.close();
+				return id;
+			} else {
+				System.out.println("插入数据失败!!!");
+			}
+            // 完成后关闭
+            stmt.close();
+            conn.close();
+            return 0;
+        }catch(SQLException se){
+            // 处理 JDBC 错误
+            se.printStackTrace();
+        }catch(Exception e){
+            // 处理 Class.forName 错误
+            e.printStackTrace();
+        }finally{
+            // 关闭资源
+            try{
+                if(stmt!=null) stmt.close();
+            }catch(SQLException se2){
+            }// 什么都不做
+            try{
+                if(conn!=null) 
+                	conn.close();
+            }catch(SQLException se){
+                se.printStackTrace();
+            }
+        }
+        return 0;
     }
     
 }

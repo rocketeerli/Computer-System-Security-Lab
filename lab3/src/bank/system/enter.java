@@ -65,6 +65,7 @@ public class enter {
 		JTextField userPasswordText = new JTextField(20);
 		JTextField identityText = new JTextField(20);
 		JButton loginButton = new JButton("登录");
+		JButton registerButton = new JButton("注册");
 		
 		// 设置标签的大小和位置
 		userLabel.setBounds(10, 20, 80, 25);
@@ -74,6 +75,7 @@ public class enter {
 		identityLabel.setBounds(10, 80, 80, 25);
 		identityText.setBounds(100, 80, 165, 25);
 		loginButton.setBounds(10, 110, 80, 25);
+		registerButton.setBounds(10, 140, 80, 25);
 		
 		// 设置面板内容
 		panel.add(userLabel);
@@ -83,6 +85,7 @@ public class enter {
 		panel.add(identityLabel);
 		panel.add(identityText);
 		panel.add(loginButton);
+		panel.add(registerButton);
 		
 		// 将面板加入到窗口中
 		frame.add(panel);
@@ -144,10 +147,104 @@ public class enter {
 				}
 			}
 		});
+		
+		// 注册按钮的监听事件
+		registerButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				frame.dispose();
+				registerPage();
+			}
+		});
+		
 		// 设置窗口可见
 		frame.setVisible(true);
 	} 
 	
+	// 注册界面
+	private static void registerPage() {
+		JFrame frame = new JFrame("银行系统设计——用户注册");
+		frame.setSize(600, 400);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		// 创建面板
+		JPanel panel = new JPanel();
+		panel.setLayout(null);    // 面板布局
+		
+		//创建 标签 & 输入框 & 按钮
+		JLabel userLabel = new JLabel("用户:");
+		JLabel passwordLabel = new JLabel("密码:");
+		JLabel identityLabel = new JLabel("注册身份:");
+		JTextField userNameText = new JTextField(20);       
+		JTextField userPasswordText = new JTextField(20);
+		JTextField identityText = new JTextField(20);
+		JButton registerButton = new JButton("注册");
+		
+		// 设置标签的大小和位置
+		userLabel.setBounds(10, 20, 80, 25);
+		userNameText.setBounds(100, 20, 165, 25);
+		passwordLabel.setBounds(10, 50, 80, 25);
+		userPasswordText.setBounds(100, 50, 165, 25);
+		identityLabel.setBounds(10, 80, 80, 25);
+		identityText.setBounds(100, 80, 165, 25);
+		registerButton.setBounds(10, 140, 80, 25);
+		
+		// 设置面板内容
+		panel.add(userLabel);
+		panel.add(userNameText);
+		panel.add(passwordLabel);
+		panel.add(userPasswordText);
+		panel.add(identityLabel);
+		panel.add(identityText);
+		panel.add(registerButton);
+		
+		registerButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// 插入数据库用户信息
+				if (identityText.getText().equals("用户")) {
+					Client client = new Client();
+					client.setUserName(userNameText.getText());
+					client.setUserPassword(userPasswordText.getText());
+					client.setDeposit(0);
+					MysqlConnect.insertClient(client);
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 增加用户 " + userNameText.getText() + " 成功 \n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
+				} else if (identityText.getText().equals("管理员")) {
+					Administrator administrator = new Administrator();
+					administrator.setUserName(userNameText.getText());
+					administrator.setUserPassword(userPasswordText.getText());
+					MysqlConnect.insertManager(administrator);
+					// 写日志
+					try {
+						Date now = new Date(); 
+						SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+						String current_time = dateFormat.format(now);
+						Log.output.write((current_time + "\t 增加管理员 " + userNameText.getText() + " 成功 \n").getBytes());
+					} catch (IOException e2) {
+						System.out.println("写入日志失败!!!");
+					}
+				}
+				frame.dispose();
+			}
+		});
+		
+		// 将面板加入窗口中
+		frame.add(panel);
+		// 设置窗口可见
+		frame.setVisible(true);
+	}
+	
+	// 登录失败界面
 	private static void loginFailedPage() {
 		JFrame frame = new JFrame("用户登录失败");
 		frame.setSize(300, 200);
