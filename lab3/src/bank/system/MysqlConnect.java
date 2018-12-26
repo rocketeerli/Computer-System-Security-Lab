@@ -255,7 +255,7 @@ public class MysqlConnect {
     }
     
     // 增加账单信息
-    public static void insertBill(long client_id, String name, int money) {
+    public static int insertBill(Bill bill) {
         Connection conn = null;
         Statement stmt = null;
         try{
@@ -272,16 +272,20 @@ public class MysqlConnect {
             Random rand = new Random();
             int id = rand.nextInt(100000)+ 1; 
             sql = "insert into bill_waiting_deal(id, client_id, name, money) values(" + 
-            		"'" + id + "', '" + client_id + "', '" + name +"', '" + money + "')";
+            		"'" + id + "', '" + bill.getClient_id() + "', '" + bill.getName() +"', '" + bill.getMoney() + "')";
             int rs = stmt.executeUpdate(sql);
             if (rs > 0) {
 				System.out.println("插入数据成功!!!");
+				stmt.close();
+	            conn.close();
+				return id;
 			} else {
 				System.out.println("插入数据失败!!!");
 			}
             // 完成后关闭
             stmt.close();
             conn.close();
+            return 0;
         }catch(SQLException se){
             // 处理 JDBC 错误
             se.printStackTrace();
@@ -301,6 +305,7 @@ public class MysqlConnect {
                 se.printStackTrace();
             }
         }
+        return 0;
     }
     
     // 更改数据库的存款信息

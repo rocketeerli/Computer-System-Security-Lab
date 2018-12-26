@@ -2,6 +2,9 @@ package bank.system;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -10,6 +13,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import bank.util.Administrator;
+import bank.util.Bill;
 import bank.util.Client;
 import bank.util.Information;
 
@@ -19,14 +23,21 @@ public class enter {
 	public static long current_manager_id;
 	public static String current_manager_name;
 	public static long deposit;
-	public static int money;
-	public static long bill_id;
+	public static Bill bill;
 
 	public static void main(String[] args) {
 		// 查询数据库，存储相应的信息
 		MysqlConnect.getClientInformation();
 		MysqlConnect.getManagerInformation();
 		MysqlConnect.getBillInformation();
+		// 初始化 账单信息
+		if (Information.bills != null) {
+			if (Information.bills.size() == 0) {
+				bill = new Bill();
+			} else {
+				bill = Information.bills.get(0);
+			}
+		}
 		// 进入登录界面
 		loginPage();
 	}
@@ -267,9 +278,14 @@ public class enter {
 		ensureButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				money = Integer.parseInt(moneyNumberText.getText());
+				Bill bill_temp = new Bill();
+				bill_temp.setClient_id(current_client_id);
+				bill_temp.setName(current_user_name);
+				bill_temp.setMoney(Integer.parseInt(moneyNumberText.getText()));
 				// 跳转到管理员
-				MysqlConnect.insertBill(current_client_id, current_user_name, money);
+				int id = MysqlConnect.insertBill(bill_temp);
+				bill = bill_temp;
+				bill_temp.setId(id);
 				MysqlConnect.getBillInformation();
 				loginPage();
 			}
@@ -322,10 +338,14 @@ public class enter {
 		ensureButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				money = Integer.parseInt(moneyNumberText.getText());
+				Bill bill_temp = new Bill();
+				bill_temp.setClient_id(current_client_id);
+				bill_temp.setName(current_user_name);
+				bill_temp.setMoney(-Integer.parseInt(moneyNumberText.getText()));
+				int id = MysqlConnect.insertBill(bill_temp);
+				bill = bill_temp;
+				bill_temp.setId(id);
 				// 跳转到管理员
-				money = -money;
-				MysqlConnect.insertBill(current_client_id, current_user_name, money);
 				MysqlConnect.getBillInformation();
 				loginPage();
 			}
@@ -359,13 +379,13 @@ public class enter {
 		
 		// 创建 标签 & 输入框 & 按钮
 		JLabel withdrawRemindLabel = new JLabel("余额：" + deposit);
-		JLabel waitingEnsuredLabel = new JLabel("待确认金额：" + money);
+		JLabel waitingEnsuredLabel = new JLabel("待确认金额：" + bill.getMoney());
 		JButton ensureButton = new JButton("确定");
 		JButton returnButton = new JButton("返回");
 		
 		// 设置标签和按钮的大小和位置
-		withdrawRemindLabel.setBounds(60, 40, 75, 30);
-		waitingEnsuredLabel.setBounds(60, 40, 75, 30);
+		withdrawRemindLabel.setBounds(60, 40, 165, 30);
+		waitingEnsuredLabel.setBounds(60, 80, 165, 30);
 		ensureButton.setBounds(60, 120, 150, 30);
 		returnButton.setBounds(60, 160, 150, 30);
 		
@@ -378,8 +398,18 @@ public class enter {
 		ensureButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// 跳转到管理员
-				loginPage();
+				// 关闭查询页面
+				frame.dispose();
+			}
+		});
+		
+		returnButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
+				frame.dispose();
+				clientService();
 			}
 		});
 		
@@ -401,10 +431,10 @@ public class enter {
 		
 		//创建 选项按钮
 		JLabel billMessage;
-		if (enter.money < 0) {
-			billMessage = new JLabel("账单：" + "用户 " + enter.current_user_name + " 取出 " + Math.abs(money) + " 金额");
+		if (bill.getMoney() < 0) {
+			billMessage = new JLabel("账单：" + "用户 " + bill.getName() + " 取出 " + Math.abs(bill.getMoney()) + " 金额");
 		} else {
-			billMessage = new JLabel("账单：" + "用户 " + enter.current_user_name + " 存储 " + money + " 金额");
+			billMessage = new JLabel("账单：" + "用户 " + bill.getName() + " 存储 " + bill.getMoney() + " 金额");
 		}
 		JButton agreeButton = new JButton("同意");
 		JButton disagreeButton = new JButton("不同意");
@@ -425,11 +455,28 @@ public class enter {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// 删除账单
-				MysqlConnect.deleteBill(String.valueOf(bill_id));
+				MysqlConnect.deleteBill(String.valueOf(bill.getId()));
+				// 查找用户存款
+				for (Client cli : Information.clients) {
+					if (cli.getUserName().equals(bill.getName())) {
+						deposit = cli.getDeposit();
+					}
+				}
 				// 更新存款
-				MysqlConnect.updateDeposit(current_client_id, deposit + money);
+				MysqlConnect.updateDeposit(bill.getClient_id(), deposit + bill.getMoney());
 				// 更新数据库用户信息
 				MysqlConnect.getClientInformation();
+				for (Client cli : Information.clients) {
+					if (cli.getUserName().equals(enter.current_user_name)) {
+						deposit = cli.getDeposit();
+					}
+				}
+				MysqlConnect.getBillInformation();
+				if (Information.bills.size() == 0) {
+					bill = new Bill();
+				} else {
+					bill = Information.bills.get(0);
+				}
 				frame.dispose();
 			}
 		});
@@ -440,7 +487,13 @@ public class enter {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				// 删除账单
-				MysqlConnect.deleteBill(String.valueOf(bill_id));
+				MysqlConnect.deleteBill(String.valueOf(bill.getId()));
+				MysqlConnect.getBillInformation();
+				if (Information.bills.size() == 0) {
+					bill = new Bill();
+				} else {
+					bill = Information.bills.get(0);
+				}
 				frame.dispose();
 			}
 		});
