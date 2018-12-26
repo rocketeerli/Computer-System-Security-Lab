@@ -6,6 +6,10 @@ import java.sql.SQLException;
 
 import java.sql.Connection;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Random;
+
+import bank.util.*;
 
 public class MysqlConnect {
 	
@@ -16,21 +20,22 @@ public class MysqlConnect {
     // 数据库的用户名与密码，需要根据自己的设置
     static final String USER = "root";
     static final String PASS = "123456";
- 
+  
     public static void main(String[] args) {
     	getClientInformation();
     	System.out.println("管理员信息：");
     	getManagerInformation();
     	System.out.println("账单信息：");
     	getBillInformation();
-    	System.out.println("删除账单");
-    	deleteBill("33");
+//    	System.out.println("删除账单");
+//    	deleteBill("33");
 //    	System.out.println("插入账单信息");
 //    	insertBill(333, "lgj", 800);
     }
     
     // 查询用户名对应的密码
     public static void getClientInformation() {
+    	Information.clients = new ArrayList<>();
         Connection conn = null;
         Statement stmt = null;
         try{
@@ -49,17 +54,18 @@ public class MysqlConnect {
             // 展开结果集数据库
             while(rs.next()){
                 // 通过字段检索
-                int id  = rs.getInt("id");
+                long id  = rs.getLong("id");
                 String name = rs.getString("name");
                 String password = rs.getString("password");
                 int money = rs.getInt("money");
-    
-                // 输出数据
-                System.out.print("ID: " + id);
-                System.out.print(", 用户名: " + name);
-                System.out.print(", 用户密码: " + password);
-                System.out.print(", 存款余额: " + money);
-                System.out.print("\n");
+                	
+                Client client = new Client();
+                client.setDeposit(money);
+                client.setId(id);
+                client.setUserName(name);
+                client.setUserPassword(password);
+                // 存储数据
+                Information.clients.add(client);
             }
             // 完成后关闭
             rs.close();
@@ -88,6 +94,7 @@ public class MysqlConnect {
     
     // 查询管理员用户对应的密码
     public static void getManagerInformation() {
+    	Information.administrators = new ArrayList<>();
         Connection conn = null;
         Statement stmt = null;
         try{
@@ -106,15 +113,16 @@ public class MysqlConnect {
             // 展开结果集数据库
             while(rs.next()){
                 // 通过字段检索
-                int id  = rs.getInt("id");
+                long id  = rs.getLong("id");
                 String name = rs.getString("name");
                 String password = rs.getString("password");
     
-                // 输出数据
-                System.out.print("ID: " + id);
-                System.out.print(", 用户名: " + name);
-                System.out.print(", 用户密码: " + password);
-                System.out.print("\n");
+                Administrator administrator = new Administrator();
+                administrator.setId(id);
+                administrator.setUserName(name);
+                administrator.setUserPassword(password);
+                // 存储数据
+                Information.administrators.add(administrator);
             }
             // 完成后关闭
             rs.close();
@@ -141,8 +149,9 @@ public class MysqlConnect {
         }
     }
     
-    // 查询管理员用户对应的密码
+    // 查询未处理的账单信息
     public static void getBillInformation() {
+    	Information.bills = new ArrayList<>();
         Connection conn = null;
         Statement stmt = null;
         try{
@@ -166,12 +175,13 @@ public class MysqlConnect {
                 String name = rs.getString("name");
                 int money  = rs.getInt("money");
     
-                // 输出数据
-                System.out.print("ID: " + id);
-                System.out.print(", client_id: " + client_id);
-                System.out.print(", 用户名: " + name);
-                System.out.print(", 操作金额: " + money);
-                System.out.print("\n");
+                Bill bill = new Bill();
+                bill.setId(id);
+                bill.setClient_id(client_id);
+                bill.setName(name);
+                bill.setMoney(money);
+                // 存储数据
+                Information.bills.add(bill);
             }
             // 完成后关闭
             rs.close();
@@ -245,7 +255,7 @@ public class MysqlConnect {
     }
     
     // 增加账单信息
-    public static void insertBill(int client_id, String name, int money) {
+    public static void insertBill(long client_id, String name, int money) {
         Connection conn = null;
         Statement stmt = null;
         try{
@@ -259,7 +269,8 @@ public class MysqlConnect {
             // 执行查询
             stmt = conn.createStatement();
             String sql;
-            String id = "555"; 
+            Random rand = new Random();
+            int id = rand.nextInt(100000)+ 1; 
             sql = "insert into bill_waiting_deal(id, client_id, name, money) values(" + 
             		"'" + id + "', '" + client_id + "', '" + name +"', '" + money + "')";
             int rs = stmt.executeUpdate(sql);
@@ -267,6 +278,52 @@ public class MysqlConnect {
 				System.out.println("插入数据成功!!!");
 			} else {
 				System.out.println("插入数据失败!!!");
+			}
+            // 完成后关闭
+            stmt.close();
+            conn.close();
+        }catch(SQLException se){
+            // 处理 JDBC 错误
+            se.printStackTrace();
+        }catch(Exception e){
+            // 处理 Class.forName 错误
+            e.printStackTrace();
+        }finally{
+            // 关闭资源
+            try{
+                if(stmt!=null) stmt.close();
+            }catch(SQLException se2){
+            }// 什么都不做
+            try{
+                if(conn!=null) 
+                	conn.close();
+            }catch(SQLException se){
+                se.printStackTrace();
+            }
+        }
+    }
+    
+    // 更改数据库的存款信息
+    public static void updateDeposit(long client_id, long deposit) {
+        Connection conn = null;
+        Statement stmt = null;
+        try{
+            // 注册 JDBC 驱动
+            Class.forName("com.mysql.jdbc.Driver");
+            
+            // 打开链接
+            System.out.println("连接数据库...");
+            conn = DriverManager.getConnection(DB_URL,USER,PASS);
+        
+            // 执行查询
+            stmt = conn.createStatement();
+            String sql;
+            sql = "update client_info set money = '" + deposit + "' where id = '" + client_id + "'";
+            int rs = stmt.executeUpdate(sql);
+            if (rs > 0) {
+				System.out.println("更新存款成功!!!");
+			} else {
+				System.out.println("更新存款失败!!!");
 			}
             // 完成后关闭
             stmt.close();

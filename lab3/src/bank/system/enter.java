@@ -9,9 +9,25 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import bank.util.Administrator;
+import bank.util.Client;
+import bank.util.Information;
+
 public class enter {
+	public static long current_client_id;
+	public static String current_user_name;
+	public static long current_manager_id;
+	public static String current_manager_name;
+	public static long deposit;
+	public static int money;
+	public static long bill_id;
 
 	public static void main(String[] args) {
+		// 查询数据库，存储相应的信息
+		MysqlConnect.getClientInformation();
+		MysqlConnect.getManagerInformation();
+		MysqlConnect.getBillInformation();
+		// 进入登录界面
 		loginPage();
 	}
 	
@@ -28,10 +44,12 @@ public class enter {
 		panel.setLayout(null);    // 面板布局
 		
 		//创建 标签 & 输入框 & 按钮
-		JLabel userLabel = new JLabel("User:");
-		JLabel passwordLabel = new JLabel("Password:");
+		JLabel userLabel = new JLabel("用户:");
+		JLabel passwordLabel = new JLabel("密码:");
+		JLabel identityLabel = new JLabel("身份:");
 		JTextField userNameText = new JTextField(20);       
 		JTextField userPasswordText = new JTextField(20);
+		JTextField identityText = new JTextField(20);
 		JButton loginButton = new JButton("登录");
 		
 		// 设置标签的大小和位置
@@ -39,13 +57,17 @@ public class enter {
 		userNameText.setBounds(100, 20, 165, 25);
 		passwordLabel.setBounds(10, 50, 80, 25);
 		userPasswordText.setBounds(100, 50, 165, 25);
-		loginButton.setBounds(10, 80, 80, 25);
+		identityLabel.setBounds(10, 80, 80, 25);
+		identityText.setBounds(100, 80, 165, 25);
+		loginButton.setBounds(10, 110, 80, 25);
 		
 		// 设置面板内容
 		panel.add(userLabel);
 		panel.add(userNameText);
 		panel.add(passwordLabel);
 		panel.add(userPasswordText);
+		panel.add(identityLabel);
+		panel.add(identityText);
 		panel.add(loginButton);
 		
 		// 将面板加入到窗口中
@@ -56,11 +78,36 @@ public class enter {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				// TODO Auto-generated method stub
-				if (userNameText.getText().equals("lgj") && userPasswordText.getText().equals("lgjpass")) {
-					clientService();
-					frame.dispose();
-				} else {
+				// 检测身份
+				int flag = 0;
+				if (identityText.getText().equals("用户")) {
+					// 查找该用户
+					for (Client client : Information.clients) {
+						if (client.getUserName().equals(userNameText.getText()) && 
+								client.getUserPassword().equals(userPasswordText.getText())) {
+							enter.deposit = client.getDeposit();
+							enter.current_client_id = client.getId();
+							enter.current_user_name = client.getUserName();
+							clientService();
+							frame.dispose();
+							flag = 1;
+						}
+					}
+				} else if (identityText.getText().equals("管理员")) {
+					// 查找该用户
+					for (Administrator administrator : Information.administrators) {
+						if (administrator.getUserName().equals(userNameText.getText()) && 
+								administrator.getUserPassword().equals(userPasswordText.getText())) {
+							enter.current_manager_id = administrator.getId();
+							enter.current_manager_name = administrator.getUserName();
+							managerService();
+							frame.dispose();
+							flag = 1;
+						}
+					}
+				}
+				// 没有查找到用户信息
+				if (flag == 0) {
 					frame.dispose();
 					loginFailedPage();
 				}
@@ -107,6 +154,7 @@ public class enter {
 		frame.setVisible(true);
 	}
 	
+	// 用户服务界面
 	private static void clientService() {
 		JFrame frame = new JFrame("客户服务");
 		frame.setSize(600, 400);
@@ -219,7 +267,10 @@ public class enter {
 		ensureButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				money = Integer.parseInt(moneyNumberText.getText());
 				// 跳转到管理员
+				MysqlConnect.insertBill(current_client_id, current_user_name, money);
+				MysqlConnect.getBillInformation();
 				loginPage();
 			}
 		});
@@ -271,7 +322,11 @@ public class enter {
 		ensureButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				money = Integer.parseInt(moneyNumberText.getText());
 				// 跳转到管理员
+				money = -money;
+				MysqlConnect.insertBill(current_client_id, current_user_name, money);
+				MysqlConnect.getBillInformation();
 				loginPage();
 			}
 		});
@@ -303,8 +358,8 @@ public class enter {
 		panel.setLayout(null);    // 面板布局
 		
 		// 创建 标签 & 输入框 & 按钮
-		JLabel withdrawRemindLabel = new JLabel("余额：");
-		JLabel waitingEnsuredLabel = new JLabel("待确认金额：");
+		JLabel withdrawRemindLabel = new JLabel("余额：" + deposit);
+		JLabel waitingEnsuredLabel = new JLabel("待确认金额：" + money);
 		JButton ensureButton = new JButton("确定");
 		JButton returnButton = new JButton("返回");
 		
@@ -333,4 +388,67 @@ public class enter {
 		// 设置窗口可见
 		frame.setVisible(true);
 	}
+	
+	// 管理员服务界面
+	private static void managerService() {
+		JFrame frame = new JFrame("管理员服务");
+		frame.setSize(600, 400);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		// 创建面板
+		JPanel panel = new JPanel();
+		panel.setLayout(null);    // 面板布局
+		
+		//创建 选项按钮
+		JLabel billMessage;
+		if (enter.money < 0) {
+			billMessage = new JLabel("账单：" + "用户 " + enter.current_user_name + " 取出 " + Math.abs(money) + " 金额");
+		} else {
+			billMessage = new JLabel("账单：" + "用户 " + enter.current_user_name + " 存储 " + money + " 金额");
+		}
+		JButton agreeButton = new JButton("同意");
+		JButton disagreeButton = new JButton("不同意");
+		
+		// 设置标签和按钮的大小和位置
+		billMessage.setBounds(30, 80, 300, 30);
+		agreeButton.setBounds(30, 120, 150, 30);
+		disagreeButton.setBounds(30, 160, 155, 30);
+		
+		// 加入面板中
+		panel.add(billMessage);
+		panel.add(agreeButton);
+		panel.add(disagreeButton);
+		
+		// 同意的话，删除账单，并更新存款
+		agreeButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// 删除账单
+				MysqlConnect.deleteBill(String.valueOf(bill_id));
+				// 更新存款
+				MysqlConnect.updateDeposit(current_client_id, deposit + money);
+				// 更新数据库用户信息
+				MysqlConnect.getClientInformation();
+				frame.dispose();
+			}
+		});
+		
+		// 不同意的话，删除账单。
+		disagreeButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				// 删除账单
+				MysqlConnect.deleteBill(String.valueOf(bill_id));
+				frame.dispose();
+			}
+		});
+		
+		// 将面板加入窗口中
+		frame.add(panel);
+		// 设置窗口可见
+		frame.setVisible(true);
+	}
+	
 }
